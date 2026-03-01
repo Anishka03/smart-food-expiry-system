@@ -1,0 +1,18 @@
+<h2>Your Food Items</h2>
+
+<a href="/dashboard">⬅ Back to Dashboard</a>
+<a href="/logout">Logout</a>
+
+<hr>
+
+{% if foods %}
+    {% for food in foods %}
+        <p>
+            🍽 <b>{{ food.name }}</b> -
+            📅 {{ food.expiry }}
+            <a href="/delete/{{ food.id }}">❌ Delete</a>
+        </p>
+    {% endfor %}
+{% else %}
+    <p>No food items added.</p>
+{% endif %}

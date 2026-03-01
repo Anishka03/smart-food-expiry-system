@@ -1,0 +1,193 @@
+from flask import Flask, request, redirect, session, render_template, flash
+from datetime import datetime, date
+from threading import Thread
+
+from models import db, User, Food
+from email_utils import send_email
+from whatsapp_utils import send_whatsapp
+from reminder import check_expiry
+import random
+
+app = Flask(__name__)
+app.secret_key = "foodsecret"
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///food.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+
+# LOGIN
+@app.route("/", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        user = User.query.filter_by(
+            username=request.form["username"],
+            password=request.form["password"]
+        ).first()
+
+        if user:
+            session["uid"] = user.id
+            return redirect("/dashboard")
+
+        flash("Invalid Login")
+
+    return render_template("login.html")
+
+
+# REGISTER
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        new_user = User(
+            username=request.form["username"],
+            email=request.form["email"],
+            phone=request.form["phone"],
+            password=request.form["password"]
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect("/")
+
+    return render_template("register.html")
+
+
+# ================= FORGOT PASSWORD =================
+
+@app.route("/forgot", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form["email"]
+
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            otp = str(random.randint(100000, 999999))
+
+            session["reset_otp"] = otp
+            session["reset_user"] = user.id
+
+            msg = f"Your OTP for password reset is: {otp}"
+
+            send_email(user.email, msg)
+            send_whatsapp(user.phone, msg)
+
+            flash("OTP sent to your email and WhatsApp")
+            return redirect("/verify_otp")
+
+        flash("Email not found")
+
+    return render_template("forgot.html")
+
+# ================= VERIFY OTP =================
+
+@app.route("/verify_otp", methods=["GET", "POST"])
+def verify_otp():
+    if request.method == "POST":
+        entered_otp = request.form["otp"]
+
+        if entered_otp == session.get("reset_otp"):
+            return redirect("/reset_password")
+        else:
+            flash("Invalid OTP")
+
+    return render_template("verify_otp.html")
+
+# ================= RESET PASSWORD =================
+
+@app.route("/reset_password", methods=["GET", "POST"])
+def reset_password():
+    if request.method == "POST":
+        new_password = request.form["password"]
+
+        user = db.session.get(User, session.get("reset_user"))
+
+        if user:
+            user.password = new_password
+            db.session.commit()
+
+            session.pop("reset_otp", None)
+            session.pop("reset_user", None)
+
+            flash("Password Reset Successful")
+            return redirect("/")
+
+    return render_template("reset_password.html")
+
+
+#dashboard
+@app.route("/dashboard", methods=["GET", "POST"])
+def dashboard():
+    if "uid" not in session:
+        return redirect("/")
+
+    user = User.query.get(session["uid"])
+
+    if request.method == "POST":
+        name = request.form["name"]
+        expiry_date = datetime.strptime(
+            request.form["expiry"], "%Y-%m-%d"
+        ).date()
+
+        new_food = Food(
+            name=name,
+            expiry=expiry_date,
+            user_id=session["uid"]
+        )
+
+        db.session.add(new_food)
+        db.session.commit()
+
+        today = date.today()
+
+        if expiry_date > today:
+            msg = f"⏰ Food '{name}' expires on {expiry_date}"
+        elif expiry_date == today:
+            msg = f"⚠ Food '{name}' EXPIRES TODAY"
+        else:
+            msg = f"❌ Food '{name}' already expired"
+
+        send_email(user.email, msg)
+        send_whatsapp(user.phone, msg)
+
+        flash("Food Added Successfully")
+
+    return render_template("dashboard.html")
+
+#add list
+@app.route("/foods")
+def food_list():
+    if "uid" not in session:
+        return redirect("/")
+
+    foods = Food.query.filter_by(user_id=session["uid"]).all()
+
+    return render_template("food_list.html", foods=foods)
+
+#delete
+@app.route("/delete/<int:id>")
+def delete_food(id):
+    if "uid" not in session:
+        return redirect("/")
+
+    food = Food.query.filter_by(id=id, user_id=session["uid"]).first()
+
+    if food:
+        db.session.delete(food)
+        db.session.commit()
+
+    return redirect("/foods")
+
+#logout
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
+
+#run
+if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
+
+    Thread(target=check_expiry, args=(app,), daemon=True).start()
+
+    app.run(debug=True)
