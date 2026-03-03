@@ -1,5 +1,23 @@
+# Virtual Environment
 venv/
+
+# Environment Variables
 .env
+
+# Python cache
 __pycache__/
 *.pyc
-food.db
+
+# Database files
+*.db
+
+# IDE files
+.idea/
+.vscode/
+
+# Instance folder (Flask DB location)
+instance/
+
+# OS files
+.DS_Store
+Thumbs.db
