@@ -44,17 +44,39 @@ def login():
 def register():
     if request.method == "POST":
 
-        hashed_password = generate_password_hash(request.form["password"])
+        username = request.form["username"]
+        email = request.form["email"]
+        phone = request.form["phone"]
+        password = request.form["password"]
+
+        # Check if username already exists
+        existing_user = User.query.filter_by(username=username).first()
+
+        if existing_user:
+            flash("Username already exists")
+            return redirect("/register")
+
+        # Check if email already exists
+        existing_email = User.query.filter_by(email=email).first()
+
+        if existing_email:
+            flash("Email already registered")
+            return redirect("/register")
+
+        # Hash password
+        hashed_password = generate_password_hash(password)
 
         new_user = User(
-            username=request.form["username"],
-            email=request.form["email"],
-            phone=request.form["phone"],
+            username=username,
+            email=email,
+            phone=phone,
             password=hashed_password
         )
 
         db.session.add(new_user)
         db.session.commit()
+
+        flash("Registration successful. Please login.")
 
         return redirect("/")
 
