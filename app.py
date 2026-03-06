@@ -1,12 +1,14 @@
 from flask import Flask, request, redirect, session, render_template, flash
 from datetime import datetime, date
 from threading import Thread
+import random
+
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from models import db, User, Food
 from email_utils import send_email
 from whatsapp_utils import send_whatsapp
 from reminder import check_expiry
-import random
 
 app = Flask(__name__)
 app.secret_key = "foodsecret"
@@ -16,16 +18,18 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 
-# LOGIN
+
+# ================= LOGIN =================
+
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+
         user = User.query.filter_by(
-            username=request.form["username"],
-            password=request.form["password"]
+            username=request.form["username"]
         ).first()
 
-        if user:
+        if user and check_password_hash(user.password, request.form["password"]):
             session["uid"] = user.id
             return redirect("/dashboard")
 
@@ -34,18 +38,24 @@ def login():
     return render_template("login.html")
 
 
-# REGISTER
+# ================= REGISTER =================
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
+
+        hashed_password = generate_password_hash(request.form["password"])
+
         new_user = User(
             username=request.form["username"],
             email=request.form["email"],
             phone=request.form["phone"],
-            password=request.form["password"]
+            password=hashed_password
         )
+
         db.session.add(new_user)
         db.session.commit()
+
         return redirect("/")
 
     return render_template("register.html")
@@ -55,12 +65,14 @@ def register():
 
 @app.route("/forgot", methods=["GET", "POST"])
 def forgot_password():
-    if request.method == "POST":
-        email = request.form["email"]
 
+    if request.method == "POST":
+
+        email = request.form["email"]
         user = User.query.filter_by(email=email).first()
 
         if user:
+
             otp = str(random.randint(100000, 999999))
 
             session["reset_otp"] = otp
@@ -72,17 +84,21 @@ def forgot_password():
             send_whatsapp(user.phone, msg)
 
             flash("OTP sent to your email and WhatsApp")
+
             return redirect("/verify_otp")
 
         flash("Email not found")
 
     return render_template("forgot.html")
 
+
 # ================= VERIFY OTP =================
 
 @app.route("/verify_otp", methods=["GET", "POST"])
 def verify_otp():
+
     if request.method == "POST":
+
         entered_otp = request.form["otp"]
 
         if entered_otp == session.get("reset_otp"):
@@ -92,38 +108,48 @@ def verify_otp():
 
     return render_template("verify_otp.html")
 
+
 # ================= RESET PASSWORD =================
 
 @app.route("/reset_password", methods=["GET", "POST"])
 def reset_password():
+
     if request.method == "POST":
+
         new_password = request.form["password"]
 
         user = db.session.get(User, session.get("reset_user"))
 
         if user:
-            user.password = new_password
+
+            user.password = generate_password_hash(new_password)
+
             db.session.commit()
 
             session.pop("reset_otp", None)
             session.pop("reset_user", None)
 
             flash("Password Reset Successful")
+
             return redirect("/")
 
     return render_template("reset_password.html")
 
 
-#dashboard
+# ================= DASHBOARD =================
+
 @app.route("/dashboard", methods=["GET", "POST"])
 def dashboard():
+
     if "uid" not in session:
         return redirect("/")
 
     user = User.query.get(session["uid"])
 
     if request.method == "POST":
+
         name = request.form["name"]
+
         expiry_date = datetime.strptime(
             request.form["expiry"], "%Y-%m-%d"
         ).date()
@@ -141,8 +167,10 @@ def dashboard():
 
         if expiry_date > today:
             msg = f"⏰ Food '{name}' expires on {expiry_date}"
+
         elif expiry_date == today:
             msg = f"⚠ Food '{name}' EXPIRES TODAY"
+
         else:
             msg = f"❌ Food '{name}' already expired"
 
@@ -153,9 +181,12 @@ def dashboard():
 
     return render_template("dashboard.html")
 
-#add list
+
+# ================= FOOD LIST =================
+
 @app.route("/foods")
 def food_list():
+
     if "uid" not in session:
         return redirect("/")
 
@@ -163,9 +194,12 @@ def food_list():
 
     return render_template("food_list.html", foods=foods)
 
-#delete
+
+# ================= DELETE FOOD =================
+
 @app.route("/delete/<int:id>")
 def delete_food(id):
+
     if "uid" not in session:
         return redirect("/")
 
@@ -177,14 +211,19 @@ def delete_food(id):
 
     return redirect("/foods")
 
-#logout
+
+# ================= LOGOUT =================
+
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
-#run
+
+# ================= RUN APP =================
+
 if __name__ == "__main__":
+
     with app.app_context():
         db.create_all()
 
