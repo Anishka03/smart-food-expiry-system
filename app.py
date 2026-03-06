@@ -260,6 +260,7 @@ def delete_food(id):
 # ================= LOGOUT =================
 
 @app.route("/logout")
+@login_required
 def logout():
     session.clear()
     return redirect("/")
