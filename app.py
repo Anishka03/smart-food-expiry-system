@@ -42,6 +42,25 @@ def login_required(f):
     return wrapper
 
 
+# ================= ALERT FUNCTION =================
+
+def send_food_alert(user, food_name, expiry_date):
+
+    today = date.today()
+
+    if expiry_date > today:
+        msg = f"⏰ Food '{food_name}' expires on {expiry_date}"
+
+    elif expiry_date == today:
+        msg = f"⚠ Food '{food_name}' EXPIRES TODAY"
+
+    else:
+        msg = f"❌ Food '{food_name}' already expired"
+
+    send_email(user.email, msg)
+    send_whatsapp(user.phone, msg)
+
+
 # ================= LOGIN =================
 
 @app.route("/", methods=["GET", "POST"])
@@ -205,19 +224,7 @@ def dashboard():
         db.session.add(new_food)
         db.session.commit()
 
-        today = date.today()
-
-        if expiry_date > today:
-            msg = f"⏰ Food '{name}' expires on {expiry_date}"
-
-        elif expiry_date == today:
-            msg = f"⚠ Food '{name}' EXPIRES TODAY"
-
-        else:
-            msg = f"❌ Food '{name}' already expired"
-
-        send_email(user.email, msg)
-        send_whatsapp(user.phone, msg)
+        send_food_alert(user, name, expiry_date)
 
         flash("Food Added Successfully")
 
