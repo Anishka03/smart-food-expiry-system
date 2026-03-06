@@ -1,3 +1,4 @@
+from functools import wraps
 from flask import Flask, request, redirect, session, render_template, flash
 from datetime import datetime, date
 from threading import Thread
@@ -19,10 +20,22 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 
+# ================= LOGIN REQUIRED DECORATOR =================
+
+def login_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if "uid" not in session:
+            return redirect("/")
+        return f(*args, **kwargs)
+    return wrapper
+
+
 # ================= LOGIN =================
 
 @app.route("/", methods=["GET", "POST"])
 def login():
+
     if request.method == "POST":
 
         user = User.query.filter_by(
@@ -42,6 +55,7 @@ def login():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+
     if request.method == "POST":
 
         username = request.form["username"]
@@ -49,21 +63,18 @@ def register():
         phone = request.form["phone"]
         password = request.form["password"]
 
-        # Check if username already exists
         existing_user = User.query.filter_by(username=username).first()
 
         if existing_user:
             flash("Username already exists")
             return redirect("/register")
 
-        # Check if email already exists
         existing_email = User.query.filter_by(email=email).first()
 
         if existing_email:
             flash("Email already registered")
             return redirect("/register")
 
-        # Hash password
         hashed_password = generate_password_hash(password)
 
         new_user = User(
@@ -161,10 +172,8 @@ def reset_password():
 # ================= DASHBOARD =================
 
 @app.route("/dashboard", methods=["GET", "POST"])
+@login_required
 def dashboard():
-
-    if "uid" not in session:
-        return redirect("/")
 
     user = User.query.get(session["uid"])
 
@@ -207,10 +216,8 @@ def dashboard():
 # ================= FOOD LIST =================
 
 @app.route("/foods")
+@login_required
 def food_list():
-
-    if "uid" not in session:
-        return redirect("/")
 
     foods = Food.query.filter_by(user_id=session["uid"]).all()
 
@@ -220,10 +227,8 @@ def food_list():
 # ================= DELETE FOOD =================
 
 @app.route("/delete/<int:id>")
+@login_required
 def delete_food(id):
-
-    if "uid" not in session:
-        return redirect("/")
 
     food = Food.query.filter_by(id=id, user_id=session["uid"]).first()
 
