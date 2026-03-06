@@ -1,9 +1,11 @@
+import os
+import random
 from functools import wraps
-from flask import Flask, request, redirect, session, render_template, flash
 from datetime import datetime, date
 from threading import Thread
-import random
 
+from flask import Flask, request, redirect, session, render_template, flash
+from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from models import db, User, Food
@@ -11,10 +13,19 @@ from email_utils import send_email
 from whatsapp_utils import send_whatsapp
 from reminder import check_expiry
 
-app = Flask(__name__)
-app.secret_key = "foodsecret"
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///food.db'
+# ================= LOAD ENV VARIABLES =================
+
+load_dotenv()
+
+
+# ================= APP CONFIG =================
+
+app = Flask(__name__)
+
+app.secret_key = os.getenv("SECRET_KEY")
+
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -136,8 +147,8 @@ def verify_otp():
 
         if entered_otp == session.get("reset_otp"):
             return redirect("/reset_password")
-        else:
-            flash("Invalid OTP")
+
+        flash("Invalid OTP")
 
     return render_template("verify_otp.html")
 
