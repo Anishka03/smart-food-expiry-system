@@ -1,5 +1,6 @@
 import os
 import random
+from datetime import date
 from functools import wraps
 from datetime import datetime, date
 from threading import Thread
@@ -239,7 +240,7 @@ def food_list():
 
     foods = Food.query.filter_by(user_id=session["uid"]).all()
 
-    return render_template("food_list.html", foods=foods)
+    return render_template("food_list.html", foods=foods, today=date.today())
 
 
 # ================= DELETE FOOD =================

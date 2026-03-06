@@ -10,6 +10,15 @@
         <p>
             🍽 <b>{{ food.name }}</b> -
             📅 {{ food.expiry }}
+
+            {% if food.expiry < today %}
+                <span style="color:red">❌ Expired</span>
+            {% elif food.expiry == today %}
+                <span style="color:orange">⚠ Expires Today</span>
+            {% else %}
+                <span style="color:green">✅ Fresh</span>
+            {% endif %}
+
             <a href="/delete/{{ food.id }}">❌ Delete</a>
         </p>
     {% endfor %}
