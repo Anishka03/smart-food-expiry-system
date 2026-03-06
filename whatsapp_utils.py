@@ -10,8 +10,11 @@ TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER")
 
 client = Client(TWILIO_SID, TWILIO_TOKEN)
 
+
 def send_whatsapp(to, msg):
+
     try:
+
         if not to.startswith("+91"):
             to = "+91" + to
 
