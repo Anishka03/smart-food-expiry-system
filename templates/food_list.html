@@ -5,6 +5,25 @@
 
 <hr>
 
+<!-- 🔍 Search + Filter -->
+<form method="GET" action="/foods">
+
+    <input type="text" name="search" placeholder="Search food..."
+           value="{{ search }}">
+
+    <select name="filter">
+        <option value="all" {% if filter_type == "all" %}selected{% endif %}>All</option>
+        <option value="fresh" {% if filter_type == "fresh" %}selected{% endif %}>Fresh</option>
+        <option value="expiring" {% if filter_type == "expiring" %}selected{% endif %}>Expiring Soon</option>
+        <option value="expired" {% if filter_type == "expired" %}selected{% endif %}>Expired</option>
+    </select>
+
+    <button type="submit">Apply</button>
+
+</form>
+
+<hr>
+
 {% if foods %}
     {% for food in foods %}
         <p>
@@ -23,5 +42,5 @@
         </p>
     {% endfor %}
 {% else %}
-    <p>No food items added.</p>
+    <p>No food items found.</p>
 {% endif %}

@@ -1,6 +1,7 @@
 import os
 import random
 from datetime import datetime, date
+from datetime import timedelta
 from functools import wraps
 from threading import Thread
 
@@ -357,12 +358,36 @@ def verify_profile_otp():
 @login_required
 def food_list():
 
-    foods = Food.query.filter_by(user_id=session["uid"]).all()
+    search = request.args.get("search", "")
+    filter_type = request.args.get("filter", "all")
+
+    foods = Food.query.filter_by(user_id=session["uid"])
+
+    # 🔍 Search
+    if search:
+        foods = foods.filter(Food.name.ilike(f"%{search}%"))
+
+    foods = foods.all()
+
+    today = date.today()
+    soon = today + timedelta(days=2)
+
+    # 🎯 Filter
+    if filter_type == "fresh":
+        foods = [f for f in foods if f.expiry > soon]
+
+    elif filter_type == "expiring":
+        foods = [f for f in foods if today <= f.expiry <= soon]
+
+    elif filter_type == "expired":
+        foods = [f for f in foods if f.expiry < today]
 
     return render_template(
         "food_list.html",
         foods=foods,
-        today=date.today()
+        today=today,
+        search=search,
+        filter_type=filter_type
     )
 
 
