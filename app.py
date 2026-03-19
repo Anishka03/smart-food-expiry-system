@@ -101,32 +101,70 @@ def register():
         phone = request.form["phone"]
         password = request.form["password"]
 
-        existing_user = User.query.filter_by(username=username).first()
-        if existing_user:
+        # Check duplicates
+        if User.query.filter_by(username=username).first():
             flash("Username already exists")
             return redirect("/register")
 
-        existing_email = User.query.filter_by(email=email).first()
-        if existing_email:
+        if User.query.filter_by(email=email).first():
             flash("Email already registered")
             return redirect("/register")
 
-        hashed_password = generate_password_hash(password)
+        # Generate OTP
+        otp = str(random.randint(100000, 999999))
 
-        new_user = User(
-            username=username,
-            email=email,
-            phone=phone,
-            password=hashed_password
-        )
+        # Store in session
+        session["reg_otp"] = otp
+        session["reg_data"] = {
+            "username": username,
+            "email": email,
+            "phone": phone,
+            "password": generate_password_hash(password)
+        }
 
-        db.session.add(new_user)
-        db.session.commit()
+        msg = f"Your registration OTP is: {otp}"
 
-        flash("Registration successful. Please login.")
-        return redirect("/")
+        send_email(email, msg)
+        send_whatsapp(phone, msg)
+
+        flash("OTP sent to email and WhatsApp")
+        return redirect("/verify_register_otp")
 
     return render_template("register.html")
+
+
+# ================= VERIFY REGISTRATION OTP =================
+
+@app.route("/verify_register_otp", methods=["GET", "POST"])
+def verify_register_otp():
+
+    if request.method == "POST":
+
+        entered_otp = request.form["otp"]
+
+        if entered_otp == session.get("reg_otp"):
+
+            data = session.get("reg_data")
+
+            new_user = User(
+                username=data["username"],
+                email=data["email"],
+                phone=data["phone"],
+                password=data["password"]
+            )
+
+            db.session.add(new_user)
+            db.session.commit()
+
+            session.pop("reg_otp", None)
+            session.pop("reg_data", None)
+
+            flash("Registration successful")
+            return redirect("/")
+
+        flash("Invalid OTP")
+
+    return render_template("verify_register_otp.html")
 
 
 # ================= FORGOT PASSWORD =================
@@ -232,6 +270,8 @@ def dashboard():
 
     return render_template("dashboard.html")
 
+# ================= PROFILE =================
+
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
@@ -243,27 +283,53 @@ def profile():
         email = request.form["email"]
         phone = request.form["phone"]
 
-        # Optional: check duplicates
-        existing_email = User.query.filter(
-            User.email == email,
-            User.id != user.id
-        ).first()
+        otp = str(random.randint(100000, 999999))
 
-        if existing_email:
-            flash("Email already in use")
-            return redirect("/profile")
+        session["profile_otp"] = otp
+        session["profile_data"] = {
+            "email": email,
+            "phone": phone
+        }
 
+        msg = f"Your profile update OTP is: {otp}"
 
-        user.email = email
-        user.phone = phone
+        send_email(email, msg)
+        send_whatsapp(phone, msg)
 
-        db.session.commit()
-
-        flash("Profile updated successfully")
-
-        return redirect("/profile")
+        flash("OTP sent")
+        return redirect("/verify_profile_otp")
 
     return render_template("profile.html", user=user)
+
+# ================= VERIFY PROFILE OTP =================
+@app.route("/verify_profile_otp", methods=["GET", "POST"])
+@login_required
+def verify_profile_otp():
+
+    user = User.query.get(session["uid"])
+
+    if request.method == "POST":
+
+        entered_otp = request.form["otp"]
+
+        if entered_otp == session.get("profile_otp"):
+
+            data = session.get("profile_data")
+
+            user.email = data["email"]
+            user.phone = data["phone"]
+
+            db.session.commit()
+
+            session.pop("profile_otp", None)
+            session.pop("profile_data", None)
+
+            flash("Profile updated successfully")
+            return redirect("/profile")
+
+        flash("Invalid OTP")
+
+    return render_template("verify_profile_otp.html")
 
 
 # ================= FOOD LIST =================
