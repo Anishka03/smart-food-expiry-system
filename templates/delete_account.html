@@ -1,0 +1,22 @@
+<h2>Delete Account</h2>
+
+<a href="/profile">⬅ Back to Profile</a>
+
+<hr>
+
+<p style="color:red">
+⚠ This action is irreversible. All your data will be permanently deleted.
+</p>
+
+{% for m in get_flashed_messages() %}
+<p style="color:red">{{m}}</p>
+{% endfor %}
+
+<form method="POST">
+    Type <b>DELETE</b> to confirm:<br><br>
+    <input type="text" name="confirm" required><br><br>
+
+    <button type="submit" style="color:white; background:red;">
+        Delete My Account
+    </button>
+</form>

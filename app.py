@@ -395,3 +395,34 @@ if __name__ == "__main__":
     Thread(target=check_expiry, args=(app,), daemon=True).start()
 
     app.run(debug=True)
+
+# ================= DELETE ACCOUNT =================
+@app.route("/delete_account", methods=["GET", "POST"])
+@login_required
+def delete_account():
+
+    user = User.query.get(session["uid"])
+
+    if request.method == "POST":
+
+        confirm = request.form.get("confirm")
+
+        if confirm == "DELETE":
+
+            # Delete related data
+            Food.query.filter_by(user_id=user.id).delete()
+            Notification.query.filter_by(user_id=user.id).delete()
+
+            # Delete user
+            db.session.delete(user)
+            db.session.commit()
+
+            session.clear()
+
+            flash("Account deleted successfully")
+            return redirect("/")
+
+        else:
+            flash("Type DELETE to confirm account deletion")
+
+    return render_template("delete_account.html")
