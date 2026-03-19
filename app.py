@@ -1,13 +1,13 @@
 import os
 import random
-from datetime import date
-from functools import wraps
 from datetime import datetime, date
+from functools import wraps
 from threading import Thread
 
 from flask import Flask, request, redirect, session, render_template, flash
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import or_
 
 from models import db, User, Food
 from email_utils import send_email
@@ -24,7 +24,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-app.secret_key = os.getenv("SECRET_KEY")
+app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -69,15 +69,22 @@ def login():
 
     if request.method == "POST":
 
-        user = User.query.filter_by(
-            username=request.form["username"]
+        username = request.form["username"]
+        password = request.form["password"]
+
+        if not username or not password:
+            flash("Please enter all fields")
+            return redirect("/")
+
+        user = User.query.filter(
+            or_(User.username == username, User.email == username)
         ).first()
 
-        if user and check_password_hash(user.password, request.form["password"]):
+        if user and check_password_hash(user.password, password):
             session["uid"] = user.id
             return redirect("/dashboard")
 
-        flash("Invalid Login")
+        flash("Invalid username/email or password")
 
     return render_template("login.html")
 
@@ -95,13 +102,11 @@ def register():
         password = request.form["password"]
 
         existing_user = User.query.filter_by(username=username).first()
-
         if existing_user:
             flash("Username already exists")
             return redirect("/register")
 
         existing_email = User.query.filter_by(email=email).first()
-
         if existing_email:
             flash("Email already registered")
             return redirect("/register")
@@ -119,7 +124,6 @@ def register():
         db.session.commit()
 
         flash("Registration successful. Please login.")
-
         return redirect("/")
 
     return render_template("register.html")
@@ -148,7 +152,6 @@ def forgot_password():
             send_whatsapp(user.phone, msg)
 
             flash("OTP sent to your email and WhatsApp")
-
             return redirect("/verify_otp")
 
         flash("Email not found")
@@ -187,14 +190,12 @@ def reset_password():
         if user:
 
             user.password = generate_password_hash(new_password)
-
             db.session.commit()
 
             session.pop("reset_otp", None)
             session.pop("reset_user", None)
 
             flash("Password Reset Successful")
-
             return redirect("/")
 
     return render_template("reset_password.html")
@@ -240,7 +241,11 @@ def food_list():
 
     foods = Food.query.filter_by(user_id=session["uid"]).all()
 
-    return render_template("food_list.html", foods=foods, today=date.today())
+    return render_template(
+        "food_list.html",
+        foods=foods,
+        today=date.today()
+    )
 
 
 # ================= DELETE FOOD =================
