@@ -232,6 +232,49 @@ def dashboard():
 
     return render_template("dashboard.html")
 
+@app.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+
+    user = User.query.get(session["uid"])
+
+    if request.method == "POST":
+
+        username = request.form["username"]
+        email = request.form["email"]
+        phone = request.form["phone"]
+
+        # Optional: check duplicates
+        existing_user = User.query.filter(
+            User.username == username,
+            User.id != user.id
+        ).first()
+
+        if existing_user:
+            flash("Username already taken")
+            return redirect("/profile")
+
+        existing_email = User.query.filter(
+            User.email == email,
+            User.id != user.id
+        ).first()
+
+        if existing_email:
+            flash("Email already in use")
+            return redirect("/profile")
+
+        user.username = username
+        user.email = email
+        user.phone = phone
+
+        db.session.commit()
+
+        flash("Profile updated successfully")
+
+        return redirect("/profile")
+
+    return render_template("profile.html", user=user)
+
 
 # ================= FOOD LIST =================
 
