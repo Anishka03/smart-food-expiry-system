@@ -12,7 +12,7 @@
 <p style="color:red">{{m}}</p>
 {% endfor %}
 
-<form method="POST">
+<form method="POST" onsubmit="return confirmDelete()">
     Type <b>DELETE</b> to confirm:<br><br>
     <input type="text" name="confirm" required><br><br>
 
@@ -20,3 +20,9 @@
         Delete My Account
     </button>
 </form>
+
+<script>
+function confirmDelete() {
+    return confirm("⚠ Are you sure you want to delete your account?\nThis action cannot be undone!");
+}
+</script>
