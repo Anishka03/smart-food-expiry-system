@@ -240,20 +240,10 @@ def profile():
 
     if request.method == "POST":
 
-        username = request.form["username"]
         email = request.form["email"]
         phone = request.form["phone"]
 
         # Optional: check duplicates
-        existing_user = User.query.filter(
-            User.username == username,
-            User.id != user.id
-        ).first()
-
-        if existing_user:
-            flash("Username already taken")
-            return redirect("/profile")
-
         existing_email = User.query.filter(
             User.email == email,
             User.id != user.id
@@ -263,7 +253,7 @@ def profile():
             flash("Email already in use")
             return redirect("/profile")
 
-        user.username = username
+
         user.email = email
         user.phone = phone
 
