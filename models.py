@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -11,8 +12,9 @@ class User(db.Model):
     phone = db.Column(db.String(20), nullable=False)
     password = db.Column(db.String(200), nullable=False)
 
-    # Relationship: one user can have many food items
+    # Relationships
     foods = db.relationship('Food', backref='user', lazy=True)
+    notifications = db.relationship('Notification', backref='user', lazy=True)
 
 
 class Food(db.Model):
@@ -23,5 +25,13 @@ class Food(db.Model):
 
     last_alert_time = db.Column(db.DateTime, nullable=True)
 
-    # Foreign key linking food to a user
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    message = db.Column(db.String(200), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
