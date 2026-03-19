@@ -4,7 +4,22 @@
 <a href="/foods">📋 View Food List</a>
 <a href="/logout">Logout</a>
 
+<hr>
+
+<h3>📊 Food Stats</h3>
+
+<p>Total Items: {{ total }}</p>
+<p style="color:green">Fresh: {{ fresh }}</p>
+<p style="color:orange">Expiring Soon: {{ expiring }}</p>
+<p style="color:red">Expired: {{ expired }}</p>
+
+<hr>
+
 <h3>Add Food</h3>
+
+{% for m in get_flashed_messages() %}
+<p style="color:green">{{m}}</p>
+{% endfor %}
 
 <form method="POST" action="/dashboard">
     Food Name:

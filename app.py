@@ -241,6 +241,8 @@ def reset_password():
 
 # ================= DASHBOARD =================
 
+from datetime import timedelta
+
 @app.route("/dashboard", methods=["GET", "POST"])
 @login_required
 def dashboard():
@@ -268,7 +270,24 @@ def dashboard():
 
         flash("Food Added Successfully")
 
-    return render_template("dashboard.html")
+    # ===== DASHBOARD STATS =====
+    foods = Food.query.filter_by(user_id=session["uid"]).all()
+
+    today = date.today()
+    soon = today + timedelta(days=2)
+
+    total = len(foods)
+    fresh = sum(1 for f in foods if f.expiry > soon)
+    expiring = sum(1 for f in foods if today <= f.expiry <= soon)
+    expired = sum(1 for f in foods if f.expiry < today)
+
+    return render_template(
+        "dashboard.html",
+        total=total,
+        fresh=fresh,
+        expiring=expiring,
+        expired=expired
+    )
 
 # ================= PROFILE =================
 
