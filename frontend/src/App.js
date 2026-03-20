@@ -1,7 +1,14 @@
+import { Routes, Route } from "react-router-dom";
 import { Login } from "./components/Login.tsx";
+import { Dashboard } from "./components/Dashboard.tsx";
 
 function App() {
-  return <Login />;
+  return (
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+    </Routes>
+  );
 }
 
 export default App;

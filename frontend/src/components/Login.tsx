@@ -9,35 +9,34 @@ export function Login() {
   const [password, setPassword] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      const res = await fetch("http://127.0.0.1:5000/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // ✅ VERY IMPORTANT
-        body: JSON.stringify({
-          username,
-          password,
-        }),
-      });
+  try {
+    const res = await fetch("http://localhost:5000/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",  // ✅ VERY IMPORTANT
+      body: JSON.stringify({
+        username,
+        password,
+      }),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (res.ok && data.status === "success") {
-        toast.success('Login successful!');
-        navigate('/dashboard');
-      } else {
-        toast.error(data.message || 'Invalid credentials');
-      }
-
-    } catch (error) {
-      console.error("Login error:", error);
-      toast.error('Server error. Please try again.');
+    if (data.status === "success") {
+      toast.success("Login successful!");
+      navigate("/dashboard");
+    } else {
+      toast.error(data.message || "Login failed");
     }
-  };
+
+  } catch (error) {
+    toast.error("Server error");
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
@@ -96,7 +95,7 @@ export function Login() {
           <div className="mt-6 space-y-3">
             <div className="text-center">
               <button
-                onClick={() => navigate('/forgot')}
+                onClick={() => navigate('/Forgot')}
                 className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
               >
                 Forgot Password?
@@ -106,7 +105,7 @@ export function Login() {
             <div className="text-center text-gray-600 text-sm">
               Don't have an account?{' '}
               <button
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/Register')}
                 className="text-emerald-600 hover:text-emerald-700 font-medium"
               >
                 Register
