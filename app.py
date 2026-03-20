@@ -1,10 +1,11 @@
+from flask_cors import CORS
 import os
 import random
 from datetime import datetime, date, timedelta
 from functools import wraps
 from threading import Thread
 
-from flask import Flask, request, redirect, session, render_template, flash
+from flask import Flask, request, redirect, session, render_template, flash, jsonify
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import or_
@@ -15,7 +16,7 @@ from whatsapp_utils import send_whatsapp
 from reminder import check_expiry
 
 
-# ================= LOAD ENV VARIABLES =================
+# ================= LOAD ENV =================
 load_dotenv()
 
 
@@ -26,20 +27,23 @@ app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# ✅ IMPORTANT FOR REACT
+CORS(app, supports_credentials=True)
+
 db.init_app(app)
 
 
-# ================= LOGIN REQUIRED DECORATOR =================
+# ================= LOGIN REQUIRED =================
 def login_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         if "uid" not in session:
-            return redirect("/")
+            return jsonify({"error": "Unauthorized"}), 401
         return f(*args, **kwargs)
     return wrapper
 
 
-# ================= ALERT FUNCTION =================
+# ================= ALERT =================
 def send_food_alert(user, food_name, expiry_date):
 
     today = date.today()
@@ -51,200 +55,38 @@ def send_food_alert(user, food_name, expiry_date):
     else:
         msg = f"❌ Food '{food_name}' already expired"
 
-    # ✅ Save notification
-    new_notification = Notification(
-        message=msg,
-        user_id=user.id
-    )
+    new_notification = Notification(message=msg, user_id=user.id)
     db.session.add(new_notification)
     db.session.commit()
 
-    # ✅ Send alerts
     send_email(user.email, msg)
     send_whatsapp(user.phone, msg)
 
 
-# ================= LOGIN =================
-@app.route("/", methods=["GET", "POST"])
-def login():
+# ================= API LOGIN (REACT) =================
+@app.route("/api/login", methods=["POST"])
+def api_login():
 
-    if request.method == "POST":
+    data = request.get_json()
 
-        username = request.form["username"]
-        password = request.form["password"]
+    username = data.get("username")
+    password = data.get("password")
 
-        if not username or not password:
-            flash("Please enter all fields")
-            return redirect("/")
+    user = User.query.filter(
+        or_(User.username == username, User.email == username)
+    ).first()
 
-        user = User.query.filter(
-            or_(User.username == username, User.email == username)
-        ).first()
+    if user and check_password_hash(user.password, password):
+        session["uid"] = user.id
+        return jsonify({"status": "success"})
 
-        if user and check_password_hash(user.password, password):
-            session["uid"] = user.id
-            return redirect("/dashboard")
-
-        flash("Invalid username/email or password")
-
-    return render_template("login.html")
+    return jsonify({"status": "error", "message": "Invalid credentials"})
 
 
-# ================= REGISTER =================
-@app.route("/register", methods=["GET", "POST"])
-def register():
-
-    if request.method == "POST":
-
-        username = request.form["username"]
-        email = request.form["email"]
-        phone = request.form["phone"]
-        password = request.form["password"]
-
-        if User.query.filter_by(username=username).first():
-            flash("Username already exists")
-            return redirect("/register")
-
-        if User.query.filter_by(email=email).first():
-            flash("Email already registered")
-            return redirect("/register")
-
-        otp = str(random.randint(100000, 999999))
-
-        session["reg_otp"] = otp
-        session["reg_data"] = {
-            "username": username,
-            "email": email,
-            "phone": phone,
-            "password": generate_password_hash(password)
-        }
-
-        msg = f"Your registration OTP is: {otp}"
-
-        send_email(email, msg)
-        send_whatsapp(phone, msg)
-
-        flash("OTP sent to email and WhatsApp")
-        return redirect("/verify_register_otp")
-
-    return render_template("register.html")
-
-
-# ================= VERIFY REGISTER OTP =================
-@app.route("/verify_register_otp", methods=["GET", "POST"])
-def verify_register_otp():
-
-    if request.method == "POST":
-
-        if request.form["otp"] == session.get("reg_otp"):
-
-            data = session.get("reg_data")
-
-            new_user = User(**data)
-
-            db.session.add(new_user)
-            db.session.commit()
-
-            session.pop("reg_otp", None)
-            session.pop("reg_data", None)
-
-            flash("Registration successful")
-            return redirect("/")
-
-        flash("Invalid OTP")
-
-    return render_template("verify_register_otp.html")
-
-
-# ================= FORGOT PASSWORD =================
-@app.route("/forgot", methods=["GET", "POST"])
-def forgot_password():
-
-    if request.method == "POST":
-
-        email = request.form["email"]
-        user = User.query.filter_by(email=email).first()
-
-        if user:
-
-            otp = str(random.randint(100000, 999999))
-
-            session["reset_otp"] = otp
-            session["reset_user"] = user.id
-
-            msg = f"Your OTP for password reset is: {otp}"
-
-            send_email(user.email, msg)
-            send_whatsapp(user.phone, msg)
-
-            flash("OTP sent")
-            return redirect("/verify_otp")
-
-        flash("Email not found")
-
-    return render_template("forgot.html")
-
-
-# ================= VERIFY OTP =================
-@app.route("/verify_otp", methods=["GET", "POST"])
-def verify_otp():
-
-    if request.method == "POST":
-
-        if request.form["otp"] == session.get("reset_otp"):
-            return redirect("/reset_password")
-
-        flash("Invalid OTP")
-
-    return render_template("verify_otp.html")
-
-
-# ================= RESET PASSWORD =================
-@app.route("/reset_password", methods=["GET", "POST"])
-def reset_password():
-
-    if request.method == "POST":
-
-        user = db.session.get(User, session.get("reset_user"))
-
-        if user:
-            user.password = generate_password_hash(request.form["password"])
-            db.session.commit()
-
-            session.pop("reset_otp", None)
-            session.pop("reset_user", None)
-
-            flash("Password Reset Successful")
-            return redirect("/")
-
-    return render_template("reset_password.html")
-
-
-# ================= DASHBOARD =================
-@app.route("/dashboard", methods=["GET", "POST"])
+# ================= API DASHBOARD =================
+@app.route("/api/dashboard")
 @login_required
-def dashboard():
-
-    user = User.query.get(session["uid"])
-
-    if request.method == "POST":
-
-        expiry_date = datetime.strptime(
-            request.form["expiry"], "%Y-%m-%d"
-        ).date()
-
-        new_food = Food(
-            name=request.form["name"],
-            expiry=expiry_date,
-            user_id=session["uid"]
-        )
-
-        db.session.add(new_food)
-        db.session.commit()
-
-        send_food_alert(user, new_food.name, expiry_date)
-
-        flash("Food Added Successfully")
+def api_dashboard():
 
     foods = Food.query.filter_by(user_id=session["uid"]).all()
 
@@ -256,118 +98,62 @@ def dashboard():
     expiring = sum(1 for f in foods if today <= f.expiry <= soon)
     expired = sum(1 for f in foods if f.expiry < today)
 
-    return render_template("dashboard.html",
-                           total=total,
-                           fresh=fresh,
-                           expiring=expiring,
-                           expired=expired)
+    return jsonify({
+        "total": total,
+        "fresh": fresh,
+        "expiring": expiring,
+        "expired": expired
+    })
 
 
-# ================= PROFILE =================
-@app.route("/profile", methods=["GET", "POST"])
+# ================= API FOOD LIST =================
+@app.route("/api/foods")
 @login_required
-def profile():
+def api_foods():
 
-    user = User.query.get(session["uid"])
+    foods = Food.query.filter_by(user_id=session["uid"]).all()
 
-    if request.method == "POST":
-
-        otp = str(random.randint(100000, 999999))
-
-        session["profile_otp"] = otp
-        session["profile_data"] = {
-            "email": request.form["email"],
-            "phone": request.form["phone"]
+    data = [
+        {
+            "id": f.id,
+            "name": f.name,
+            "expiry": str(f.expiry)
         }
+        for f in foods
+    ]
 
-        msg = f"Your profile update OTP is: {otp}"
-
-        send_email(request.form["email"], msg)
-        send_whatsapp(request.form["phone"], msg)
-
-        flash("OTP sent")
-        return redirect("/verify_profile_otp")
-
-    return render_template("profile.html", user=user)
+    return jsonify(data)
 
 
-# ================= VERIFY PROFILE OTP =================
-@app.route("/verify_profile_otp", methods=["GET", "POST"])
+# ================= API ADD FOOD =================
+@app.route("/api/add_food", methods=["POST"])
 @login_required
-def verify_profile_otp():
+def api_add_food():
+
+    data = request.get_json()
+
+    name = data.get("name")
+    expiry_date = datetime.strptime(data.get("expiry"), "%Y-%m-%d").date()
+
+    new_food = Food(
+        name=name,
+        expiry=expiry_date,
+        user_id=session["uid"]
+    )
+
+    db.session.add(new_food)
+    db.session.commit()
 
     user = User.query.get(session["uid"])
+    send_food_alert(user, name, expiry_date)
 
-    if request.method == "POST":
-
-        if request.form["otp"] == session.get("profile_otp"):
-
-            data = session.get("profile_data")
-
-            user.email = data["email"]
-            user.phone = data["phone"]
-
-            db.session.commit()
-
-            session.pop("profile_otp", None)
-            session.pop("profile_data", None)
-
-            flash("Profile updated successfully")
-            return redirect("/profile")
-
-        flash("Invalid OTP")
-
-    return render_template("verify_profile_otp.html")
+    return jsonify({"message": "Food added"})
 
 
-# ================= FOOD LIST =================
-@app.route("/foods")
+# ================= API DELETE FOOD =================
+@app.route("/api/delete_food/<int:id>", methods=["DELETE"])
 @login_required
-def food_list():
-
-    search = request.args.get("search", "")
-    filter_type = request.args.get("filter", "all")
-
-    foods = Food.query.filter_by(user_id=session["uid"])
-
-    if search:
-        foods = foods.filter(Food.name.ilike(f"%{search}%"))
-
-    foods = foods.all()
-
-    today = date.today()
-    soon = today + timedelta(days=2)
-
-    if filter_type == "fresh":
-        foods = [f for f in foods if f.expiry > soon]
-    elif filter_type == "expiring":
-        foods = [f for f in foods if today <= f.expiry <= soon]
-    elif filter_type == "expired":
-        foods = [f for f in foods if f.expiry < today]
-
-    return render_template("food_list.html",
-                           foods=foods,
-                           today=today,
-                           search=search,
-                           filter_type=filter_type)
-
-
-# ================= NOTIFICATIONS =================
-@app.route("/notifications")
-@login_required
-def notifications():
-
-    notes = Notification.query.filter_by(
-        user_id=session["uid"]
-    ).order_by(Notification.created_at.desc()).all()
-
-    return render_template("notifications.html", notes=notes)
-
-
-# ================= DELETE FOOD =================
-@app.route("/delete/<int:id>")
-@login_required
-def delete_food(id):
+def api_delete_food(id):
 
     food = Food.query.filter_by(id=id, user_id=session["uid"]).first()
 
@@ -375,15 +161,15 @@ def delete_food(id):
         db.session.delete(food)
         db.session.commit()
 
-    return redirect("/foods")
+    return jsonify({"message": "Deleted"})
 
 
-# ================= LOGOUT =================
-@app.route("/logout")
+# ================= API LOGOUT =================
+@app.route("/api/logout")
 @login_required
-def logout():
+def api_logout():
     session.clear()
-    return redirect("/")
+    return jsonify({"message": "Logged out"})
 
 
 # ================= RUN =================
@@ -396,33 +182,4 @@ if __name__ == "__main__":
 
     app.run(debug=True)
 
-# ================= DELETE ACCOUNT =================
-@app.route("/delete_account", methods=["GET", "POST"])
-@login_required
-def delete_account():
-
-    user = User.query.get(session["uid"])
-
-    if request.method == "POST":
-
-        confirm = request.form.get("confirm")
-
-        if confirm == "DELETE":
-
-            # Delete related data
-            Food.query.filter_by(user_id=user.id).delete()
-            Notification.query.filter_by(user_id=user.id).delete()
-
-            # Delete user
-            db.session.delete(user)
-            db.session.commit()
-
-            session.clear()
-
-            flash("Account deleted successfully")
-            return redirect("/")
-
-        else:
-            flash("Type DELETE to confirm account deletion")
-
-    return render_template("delete_account.html")
+    
