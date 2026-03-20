@@ -67,10 +67,13 @@ def send_food_alert(user, food_name, expiry_date):
 @app.route("/api/login", methods=["POST"])
 def api_login():
 
-    data = request.get_json()
+    data = request.get_json() or {}
 
     username = data.get("username")
     password = data.get("password")
+
+    if not username or not password:
+        return jsonify({"status": "error", "message": "Missing fields"}), 400
 
     user = User.query.filter(
         or_(User.username == username, User.email == username)
@@ -80,7 +83,7 @@ def api_login():
         session["uid"] = user.id
         return jsonify({"status": "success"})
 
-    return jsonify({"status": "error", "message": "Invalid credentials"})
+    return jsonify({"status": "error", "message": "Invalid credentials"}), 401
 
 
 # ================= API DASHBOARD =================
