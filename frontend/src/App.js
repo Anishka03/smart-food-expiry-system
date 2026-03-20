@@ -1,5 +1,7 @@
+import { Login } from "./components/Login.tsx";
+
 function App() {
-  return <h1>Smart Food Expiry System</h1>;
+  return <Login />;
 }
 
 export default App;
