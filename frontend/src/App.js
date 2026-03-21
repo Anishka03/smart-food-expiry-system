@@ -6,6 +6,9 @@ import { Profile } from "./components/Profile.tsx";
 import { DeleteAccount } from "./components/delete_account.tsx";
 import { Register } from "./components/Register.tsx";
 import { VerifyRegisterOTP } from "./components/Verify_register_otp.tsx";
+import { ForgotPassword } from "./components/Forgot_password.tsx";
+import { VerifyOTP } from "./components/Verify_otp.tsx";
+import { ResetPassword } from "./components/reset_password.tsx";
 
 function App() {
   return (
@@ -17,6 +20,9 @@ function App() {
       <Route path="/delete-account" element={<DeleteAccount />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-register-otp" element={<VerifyRegisterOTP />} />
+      <Route path="/forgot" element={<ForgotPassword />} />
+      <Route path="/verify-otp" element={<VerifyOTP />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
     </Routes>
   );
 }

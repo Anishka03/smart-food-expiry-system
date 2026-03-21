@@ -285,6 +285,62 @@ def api_verify_register_otp():
 
     return jsonify({"message": "Invalid OTP"}), 400
 
+# ================= FORGOT PASSWORD =================
+@app.route("/api/forgot", methods=["POST"])
+def api_forgot():
+
+    data = request.get_json()
+    email = data.get("email")
+
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        return jsonify({"message": "Email not found"}), 404
+
+    otp = str(random.randint(100000, 999999))
+
+    session["reset_otp"] = otp
+    session["reset_user"] = user.id
+
+    msg = f"Your OTP for password reset is: {otp}"
+
+    send_email(user.email, msg)
+    send_whatsapp(user.phone, msg)
+
+    return jsonify({"message": "OTP sent"})
+
+# ================= VERIFY FORGOT OTP =================
+@app.route("/api/verify_otp", methods=["POST"])
+def api_verify_otp():
+
+    data = request.get_json()
+    entered_otp = data.get("otp")
+
+    if entered_otp == session.get("reset_otp"):
+        return jsonify({"message": "OTP verified"})
+
+    return jsonify({"message": "Invalid OTP"}), 400
+
+# ================= RESET PASSWORD =================
+@app.route("/api/reset_password", methods=["POST"])
+def api_reset_password():
+
+    data = request.get_json()
+    new_password = data.get("password")
+
+    user = User.query.get(session.get("reset_user"))
+
+    if not user:
+        return jsonify({"message": "Session expired"}), 400
+
+    user.password = generate_password_hash(new_password)
+    db.session.commit()
+
+    session.pop("reset_user", None)
+    session.pop("reset_otp", None)
+
+    return jsonify({"message": "Password updated"})
+
 # ================= RUN =================
 if __name__ == "__main__":
 
