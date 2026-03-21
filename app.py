@@ -202,6 +202,24 @@ def update_profile():
 
     return jsonify({"message": "Profile updated"})
 
+# ================= DELETE ACCOUNT =================
+@app.route("/api/delete_account", methods=["DELETE"])
+@login_required
+def api_delete_account():
+
+    user = User.query.get(session["uid"])
+
+    # delete related data
+    Food.query.filter_by(user_id=user.id).delete()
+    Notification.query.filter_by(user_id=user.id).delete()
+
+    # delete user
+    db.session.delete(user)
+    db.session.commit()
+
+    session.clear()
+
+    return jsonify({"message": "Account deleted"})
 
 # ================= RUN =================
 if __name__ == "__main__":
