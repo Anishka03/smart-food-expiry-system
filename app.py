@@ -221,6 +221,70 @@ def api_delete_account():
 
     return jsonify({"message": "Account deleted"})
 
+# ================= REGISTER =================
+@app.route("/api/register", methods=["POST"])
+def api_register():
+
+    data = request.get_json()
+
+    username = data.get("username")
+    email = data.get("email")
+    phone = data.get("phone")
+    password = data.get("password")
+
+    # check duplicates
+    if User.query.filter_by(username=username).first():
+        return jsonify({"message": "Username already exists"}), 400
+
+    if User.query.filter_by(email=email).first():
+        return jsonify({"message": "Email already registered"}), 400
+
+    # generate OTP
+    otp = str(random.randint(100000, 999999))
+
+    session["reg_otp"] = otp
+    session["reg_data"] = {
+        "username": username,
+        "email": email,
+        "phone": phone,
+        "password": generate_password_hash(password)
+    }
+
+    msg = f"Your OTP is {otp}"
+
+    send_email(email, msg)
+    send_whatsapp(phone, msg)
+
+    return jsonify({"message": "OTP sent"})
+
+# ================= VERIFY REGISTER OTP =================
+@app.route("/api/verify_register_otp", methods=["POST"])
+def api_verify_register_otp():
+
+    data = request.get_json()
+    entered_otp = data.get("otp")
+
+    if entered_otp == session.get("reg_otp"):
+
+        data = session.get("reg_data")
+
+        new_user = User(
+            username=data["username"],
+            email=data["email"],
+            phone=data["phone"],
+            password=data["password"]
+        )
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        session.pop("reg_otp", None)
+        session.pop("reg_data", None)
+
+        return jsonify({"message": "Registration successful"})
+
+    return jsonify({"message": "Invalid OTP"}), 400
+
 # ================= RUN =================
 if __name__ == "__main__":
 
