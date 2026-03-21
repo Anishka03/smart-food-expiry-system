@@ -176,6 +176,32 @@ def api_logout():
     session.clear()
     return jsonify({"message": "Logged out"})
 
+# ================= PROFILE ====================
+@app.route("/api/profile")
+@login_required
+def api_profile():
+    user = User.query.get(session["uid"])
+
+    return jsonify({
+        "username": user.username,
+        "email": user.email,
+        "phone": user.phone
+    })
+
+
+@app.route("/api/update_profile", methods=["POST"])
+@login_required
+def update_profile():
+    data = request.get_json()
+
+    user = User.query.get(session["uid"])
+    user.email = data.get("email")
+    user.phone = data.get("phone")
+
+    db.session.commit()
+
+    return jsonify({"message": "Profile updated"})
+
 
 # ================= RUN =================
 if __name__ == "__main__":
