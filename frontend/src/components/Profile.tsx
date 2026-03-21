@@ -41,33 +41,35 @@ export function Profile() {
 
   // ================= UPDATE PROFILE =================
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      const res = await fetch("http://localhost:5000/api/update_profile", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email: formData.email,
-          phone: formData.phone,
-        }),
-      });
+  try {
+    const res = await fetch("http://localhost:5000/api/request_profile_update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        email: formData.email,
+        phone: formData.phone,
+      }),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (res.ok) {
-        toast.success("Profile updated successfully!");
-      } else {
-        toast.error(data.message || "Update failed");
-      }
-
-    } catch {
-      toast.error("Server error");
+    if (res.ok) {
+      toast.success("OTP sent!");
+      navigate("/verify-profile-otp");   // ✅ go to OTP page
+    } else {
+      toast.error(data.message || "Failed");
     }
-  };
+
+  } catch {
+    toast.error("Server error");
+  }
+};
+
 
   // ================= HANDLE INPUT =================
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

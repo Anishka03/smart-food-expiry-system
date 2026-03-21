@@ -341,6 +341,56 @@ def api_reset_password():
 
     return jsonify({"message": "Password updated"})
 
+# ================= VERIFY PROFILE OTP =================
+@app.route("/api/verify_profile_otp", methods=["POST"])
+@login_required
+def api_verify_profile_otp():
+
+    data = request.get_json()
+    entered_otp = data.get("otp")
+
+    if entered_otp == session.get("profile_otp"):
+
+        update_data = session.get("profile_data")
+
+        user = User.query.get(session["uid"])
+
+        user.email = update_data["email"]
+        user.phone = update_data["phone"]
+
+        db.session.commit()
+
+        session.pop("profile_otp", None)
+        session.pop("profile_data", None)
+
+        return jsonify({"message": "Profile updated"})
+
+    return jsonify({"message": "Invalid OTP"}), 400
+
+# ================= REQUEST PROFILE UPDATE =================
+@app.route("/api/request_profile_update", methods=["POST"])
+@login_required
+def request_profile_update():
+
+    data = request.get_json()
+
+    otp = str(random.randint(100000, 999999))
+
+    session["profile_otp"] = otp
+    session["profile_data"] = {
+        "email": data.get("email"),
+        "phone": data.get("phone")
+    }
+
+    user = User.query.get(session["uid"])
+
+    msg = f"Your profile update OTP is: {otp}"
+
+    send_email(data.get("email"), msg)
+    send_whatsapp(data.get("phone"), msg)
+
+    return jsonify({"message": "OTP sent"})
+
 # ================= RUN =================
 if __name__ == "__main__":
 

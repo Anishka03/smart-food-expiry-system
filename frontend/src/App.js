@@ -9,6 +9,7 @@ import { VerifyRegisterOTP } from "./components/Verify_register_otp.tsx";
 import { ForgotPassword } from "./components/Forgot_password.tsx";
 import { VerifyOTP } from "./components/Verify_otp.tsx";
 import { ResetPassword } from "./components/reset_password.tsx";
+import { VerifyProfileOTP } from "./components/Verify_profile_otp.tsx";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
       <Route path="/forgot" element={<ForgotPassword />} />
       <Route path="/verify-otp" element={<VerifyOTP />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/verify-profile-otp" element={<VerifyProfileOTP />} />
     </Routes>
   );
 }
