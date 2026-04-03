@@ -1,6 +1,6 @@
 # 🍽️ Smart Food Expiry System
 
-A full-stack web application that helps users **track food expiry**, **reduce waste**, and receive **timely alerts** via email and WhatsApp.
+A full-stack web application that helps users **track food expiry**, **reduce waste**, and receive **real-time alerts** via Email and WhatsApp.
 
 ---
 
@@ -8,41 +8,59 @@ A full-stack web application that helps users **track food expiry**, **reduce wa
 
 ### 🔐 Authentication
 
-* User Login & Registration
-* OTP Verification (Email & Phone - Demo)
-* Session-based authentication
+- User Registration with OTP verification
+- Secure Login (session-based)
+- Forgot Password with OTP verification
+- Strong Password Validation:
+  - Minimum 8 characters
+  - Uppercase & lowercase letters
+  - Numbers & special characters
+
+---
 
 ### 📊 Dashboard
 
-* View food statistics:
+- View food statistics:
+  - Total items
+  - Fresh items
+  - Expiring soon
+  - Expired items
 
-  * Total items
-  * Fresh items
-  * Expiring soon
-  * Expired items
+---
 
 ### 🥗 Food Management
 
-* Add food items with expiry dates
-* View all food items
-* Delete items
-* Automatic status detection (Fresh / Expiring / Expired)
+- Add food items with expiry dates
+- View all food items
+- Delete items
+- Automatic status detection:
+  - Fresh
+  - Expiring
+  - Expired
+
+---
 
 ### 🔔 Notifications
 
-* Email alerts 📧
-* WhatsApp alerts 📱 (via Twilio)
-* Background expiry checker
+- 📧 Email alerts (SMTP)
+- 📱 WhatsApp alerts (Twilio API)
+- Instant alert when food is added
+- Notification records stored in database
 
-### 👤 Profile
+---
 
-* View & update user details
-* OTP-based profile update (UI demo)
+### 👤 Profile Management
+
+- View profile details
+- Update email & phone
+- OTP-based profile update verification
+
+---
 
 ### ⚠️ Account Management
 
-* Delete account functionality
-* Secure confirmation flow
+- Secure account deletion
+- Cascade delete (removes all user data safely)
 
 ---
 
@@ -50,177 +68,133 @@ A full-stack web application that helps users **track food expiry**, **reduce wa
 
 ### Frontend
 
-* React (TypeScript)
-* Tailwind CSS
-* React Router
-* Sonner (Toast notifications)
-* Lucide Icons
+- React (TypeScript)
+- Tailwind CSS
+- React Router
+- Sonner (Toast Notifications)
+- Lucide Icons
+
+---
 
 ### Backend
 
-* Flask
-* Flask-SQLAlchemy
-* Flask-CORS
-* SQLite Database
-* Twilio API (WhatsApp)
-* SMTP (Email)
+- Flask
+- Flask-SQLAlchemy
+- Flask-CORS
+- SQLite Database
+- Twilio API (WhatsApp)
+- SMTP (Email)
 
 ---
 
 ## 📁 Project Structure
-
-```
 smart-food-expiry-system/
 │
-├── app.py                # Flask backend
-├── models.py            # Database models
-├── reminder.py          # Background expiry checker
-├── email_utils.py       # Email notifications
-├── whatsapp_utils.py    # WhatsApp notifications
-├── requirements.txt     # Backend dependencies
+├── app.py # Flask backend
+├── models.py # Database models
+├── email_utils.py # Email notifications
+├── whatsapp_utils.py # WhatsApp notifications
+├── requirements.txt # Backend dependencies
 ├── instance/
-│   └── food.db          # SQLite database
+│ └── food.db # SQLite database
 │
 ├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Login.tsx
-│   │   │   ├── Dashboard.tsx
-│   │   │   ├── FoodList.tsx
-│   │   │   ├── Profile.tsx
-│   │   │   ├── Register.tsx
-│   │   │   ├── Forgot_password.tsx
-│   │   │   ├── Verify_otp.tsx
-│   │   │   ├── Reset_password.tsx
-│   │   │   ├── Delete_account.tsx
-│   │   │   └── Verify_profile_otp.tsx
-│   │   ├── App.js
-│   │   └── index.js
-│   │
-│   ├── package.json
-│   └── tailwind.config.js
+│ ├── src/
+│ │ ├── components/
+│ │ │ ├── Login.tsx
+│ │ │ ├── Dashboard.tsx
+│ │ │ ├── FoodList.tsx
+│ │ │ ├── Profile.tsx
+│ │ │ ├── Register.tsx
+│ │ │ ├── Forgot_password.tsx
+│ │ │ ├── Verify_otp.tsx
+│ │ │ ├── Reset_password.tsx
+│ │ │ ├── Delete_account.tsx
+│ │ │ └── Verify_profile_otp.tsx
+│ │ ├── App.tsx
+│ │ └── main.tsx
+│ │
+│ ├── package.json
+│ └── tailwind.config.js
 │
 └── README.md
-```
+
 
 ---
 
 ## ⚙️ Installation & Setup
 
-### 🔹 1. Clone the Repository
+### 🔹 1. Clone Repository
 
 ```bash
 git clone https://github.com/Anishka03/smart-food-expiry-system.git
 cd smart-food-expiry-system
-```
 
----
-
-### 🔹 2. Backend Setup
-
-```bash
-cd backend  # or root if backend is in root
 python -m venv venv
 venv\Scripts\activate   # Windows
 pip install -r requirements.txt
-```
 
-Create `.env` file:
+2. Backend Setup
+  SECRET_KEY=your_secret_key
+  DATABASE_URL=sqlite:///instance/food.db
+  SENDER_EMAIL=your_email
+  SENDER_PASSWORD=your_app_password
+  TWILIO_SID=your_sid
+  TWILIO_TOKEN=your_token
+  TWILIO_WHATSAPP_NUMBER=your_twilio_number
 
-```env
-SECRET_KEY=your_secret_key
-DATABASE_URL=sqlite:///instance/food.db
-EMAIL_USER=your_email
-EMAIL_PASS=your_password
-TWILIO_SID=your_sid
-TWILIO_AUTH=your_auth
-```
+  Run backend:
+    python app.py
 
-Run backend:
+3. Frontend Setup:
+    cd frontend
+    npm install
+    npm run dev   # for Vite
 
-```bash
-python app.py
-```
+🌐 API Endpoints
+🔐 Auth
+Method	  Endpoint	                  Description
+POST	    /api/login	                Login user
+POST	    /api/register	              Register user
+POST	    /api/verify_register_otp	  Verify registration OTP
+POST	    /api/forgot	                Send reset OTP
+POST	    /api/verify_otp	            Verify reset OTP
+POST	    /api/reset_password	        Reset password
 
----
+🍱 Food
+Method	  Endpoint	                  Description
+GET	      /api/dashboard	            Get stats
+GET	      /api/foods	                Get food list
+POST	    /api/add_food	              Add food
+DELETE	  /api/delete_food/<id>	      Delete food
 
-### 🔹 3. Frontend Setup
 
-```bash
-cd frontend
-npm install
-npm start
-```
+👤 User
+Method	  Endpoint	                    Description
+GET	      /api/profile	                Get profile
+POST	    /api/request_profile_update	  Send OTP
+POST	    /api/verify_profile_otp	      Verify OTP
+DELETE	  /api/delete_account	          Delete account
+GET	      /api/logout	                  Logout
 
----
 
-## 🌐 API Endpoints
+🔐 Authentication Flow
+User logs in
+Flask creates session
+Frontend sends credentials: "include"
+Backend verifies session
+Protected routes accessible
 
-| Method | Endpoint                | Description   |
-| ------ | ----------------------- | ------------- |
-| POST   | `/api/login`            | Login user    |
-| GET    | `/api/dashboard`        | Get stats     |
-| GET    | `/api/foods`            | Get food list |
-| POST   | `/api/add_food`         | Add food      |
-| DELETE | `/api/delete_food/<id>` | Delete food   |
-| GET    | `/api/logout`           | Logout        |
+🔒 Security Features
+Password hashing using Werkzeug
+Strong password validation
+OTP-based verification
+Session-based authentication
+Cascade delete for data integrity
 
----
-
-## 🔐 Authentication Flow
-
-1. User logs in
-2. Flask creates session
-3. Frontend sends `credentials: "include"`
-4. Backend verifies session
-5. Protected routes accessible
-
----
-
-## ⚠️ Notes
-
-* OTP pages are **UI-only (demo)** currently
-* SQLite is used (can be upgraded to MySQL/PostgreSQL)
-* Notifications run in background thread
-
----
-
-## 📸 Screens (UI Preview)
-
-* Login Page
-* Dashboard
-* Food List
-* Profile Page
-* OTP Screens
-
----
-
-## 🚀 Future Improvements
-
-* JWT Authentication
-* Real OTP Integration
-* Push Notifications
-* AI-based expiry prediction
-* Mobile App version
-
----
-
-## 👨‍💻 Author
-
-**Anishka Naragoni**
-
----
-
-## ⭐ Support
-
-If you like this project:
-
-* ⭐ Star the repo
-* 🍴 Fork it
-* 🛠️ Contribute
-
----
-
-## 📄 License
-
-This project is open-source and available under the MIT License.
+📸 Screens (UI Preview)
+Login Page
+Dashboard
+Food List
+Profile Page
+OTP Screens
