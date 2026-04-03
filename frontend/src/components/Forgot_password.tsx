@@ -16,6 +16,12 @@ export function ForgotPassword() {
       return;
     }
 
+    // ✅ Email validation
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      toast.error("Enter a valid email");
+      return;
+    }
+
     try {
       const res = await fetch("http://localhost:5000/api/forgot", {
         method: "POST",
@@ -29,7 +35,7 @@ export function ForgotPassword() {
       const data = await res.json();
 
       if (res.ok) {
-        toast.success("OTP sent!");
+        toast.success("OTP sent to your email!");
         navigate("/verify-otp");
       } else {
         toast.error(data.message || "Email not found");

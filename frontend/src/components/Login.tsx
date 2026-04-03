@@ -9,40 +9,47 @@ export function Login() {
   const [password, setPassword] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    const res = await fetch("http://localhost:5000/api/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",  // ✅ VERY IMPORTANT
-      body: JSON.stringify({
-        username,
-        password,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (data.status === "success") {
-      toast.success("Login successful!");
-      navigate("/dashboard");
-    } else {
-      toast.error(data.message || "Login failed");
+    if (!username || !password) {
+      toast.error("Please fill all fields");
+      return;
     }
 
-  } catch (error) {
-    toast.error("Server error");
-  }
-};
+    try {
+      const res = await fetch("http://localhost:5000/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // IMPORTANT
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      // ✅ FIXED LOGIC
+      if (res.ok) {
+        toast.success(data.message || "Login successful!");
+        navigate("/dashboard");
+      } else {
+        toast.error(data.message || "Login failed");
+      }
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Server error");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Logo/Icon */}
+
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
               <span className="text-3xl">🍽️</span>
@@ -54,64 +61,39 @@ export function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Username or Email
-              </label>
+              <label className="block text-sm font-medium mb-2">Username or Email</label>
               <input
-                id="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                placeholder="Enter your username or email"
+                className="w-full px-4 py-3 border rounded-lg"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
+              <label className="block text-sm font-medium mb-2">Password</label>
               <input
-                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                placeholder="Enter your password"
+                className="w-full px-4 py-3 border rounded-lg"
               />
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 rounded-lg font-medium hover:from-emerald-600 hover:to-teal-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30"
-            >
+            <button className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 rounded-lg flex items-center justify-center gap-2">
               <LogIn size={20} />
               Login
             </button>
           </form>
 
-          <div className="mt-6 space-y-3">
-            <div className="text-center">
-              <button
-                onClick={() => navigate('/Forgot')}
-                className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
-              >
-                Forgot Password?
-              </button>
-            </div>
-            
-            <div className="text-center text-gray-600 text-sm">
-              Don't have an account?{' '}
-              <button
-                onClick={() => navigate('/Register')}
-                className="text-emerald-600 hover:text-emerald-700 font-medium"
-              >
-                Register
-              </button>
-            </div>
+          <div className="mt-6 text-center">
+            <button onClick={() => navigate('/Forgot')} className="text-sm">
+              Forgot Password?
+            </button>
           </div>
+
         </div>
       </div>
     </div>

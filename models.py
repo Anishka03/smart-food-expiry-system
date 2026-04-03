@@ -13,9 +13,19 @@ class User(db.Model):
     password = db.Column(db.String(200), nullable=False)
 
     # Relationships
-    foods = db.relationship('Food', backref='user', lazy=True)
-    notifications = db.relationship('Notification', backref='user', lazy=True)
+    foods = db.relationship(
+        'Food',
+        backref='user',
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
 
+    notifications = db.relationship(
+        'Notification',
+        backref='user',
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
 
 class Food(db.Model):
     id = db.Column(db.Integer, primary_key=True)

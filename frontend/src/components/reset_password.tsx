@@ -16,6 +16,32 @@ export function ResetPassword() {
       return;
     }
 
+  // 🔒 Strong password validation
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      toast.error("Must include uppercase letter");
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      toast.error("Must include lowercase letter");
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      toast.error("Must include a number");
+      return;
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      toast.error("Must include special character");
+      return;
+    }
+
     try {
       const res = await fetch("http://localhost:5000/api/reset_password", {
         method: "POST",
@@ -30,11 +56,10 @@ export function ResetPassword() {
 
       if (res.ok) {
         toast.success("Password updated successfully!");
-        navigate("/"); // back to login
+        navigate("/");
       } else {
         toast.error(data.message || "Reset failed");
       }
-
     } catch {
       toast.error("Server error");
     }
