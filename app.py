@@ -288,7 +288,27 @@ def api_verify_otp():
 @app.route("/api/reset_password", methods=["POST"])
 def api_reset_password():
     data = request.get_json()
+
     password = data.get("password")
+
+    # 🔒 PASSWORD VALIDATION
+    if not password:
+        return jsonify({"status": "error", "message": "Password is required"}), 400
+
+    if len(password) < 8:
+        return jsonify({"status": "error", "message": "Password must be at least 8 characters"}), 400
+
+    if not re.search(r"[A-Z]", password):
+        return jsonify({"status": "error", "message": "Must contain uppercase letter"}), 400
+
+    if not re.search(r"[a-z]", password):
+        return jsonify({"status": "error", "message": "Must contain lowercase letter"}), 400
+
+    if not re.search(r"[0-9]", password):
+        return jsonify({"status": "error", "message": "Must contain a number"}), 400
+
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        return jsonify({"status": "error", "message": "Must contain special character"}), 400
 
     uid = session.get("reset_uid")
 
