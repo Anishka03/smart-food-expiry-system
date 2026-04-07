@@ -22,7 +22,7 @@ export function Login() {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // IMPORTANT
+        credentials: "include",
         body: JSON.stringify({
           username,
           password,
@@ -31,7 +31,6 @@ export function Login() {
 
       const data = await res.json();
 
-      // ✅ FIXED LOGIC
       if (res.ok) {
         toast.success(data.message || "Login successful!");
         navigate("/dashboard");
@@ -88,10 +87,27 @@ export function Login() {
             </button>
           </form>
 
+          {/* Forgot Password */}
           <div className="mt-6 text-center">
-            <button onClick={() => navigate('/Forgot')} className="text-sm">
+            <button
+              onClick={() => navigate('/forgot')}
+              className="text-sm text-gray-600 hover:text-emerald-600"
+            >
               Forgot Password?
             </button>
+          </div>
+
+          {/* ✅ Register Option (ADDED) */}
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{" "}
+              <span
+                onClick={() => navigate('/register')}
+                className="text-emerald-600 cursor-pointer font-medium hover:underline"
+              >
+                Register
+              </span>
+            </p>
           </div>
 
         </div>
